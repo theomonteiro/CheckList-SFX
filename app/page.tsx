@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
+import { UserPlus, Users } from 'lucide-react';
 
 export default function Home() {
   const [message, setMessage] = useState<string | null>(null);
@@ -73,27 +75,31 @@ export default function Home() {
         </p>
 
         {/* Botões principais */}
-        <div className="flex flex-col sm:flex-row gap-4 w-full max-w-xl fade-in-forward delay-400">
+        <div className="flex flex-col sm:flex-row gap-6 w-full max-w-2xl fade-in-forward delay-400">
 
-          <button
+          <Link href={"/adicionar-paciente"}
             onClick={handleAdicionarPaciente}
-            className="flex-1 text-white text-lg font-semibold py-5 px-8 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
+            className="flex-1 flex flex-col items-center justify-center gap-4 text-white text-xl font-semibold py-10 px-8 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
             style={{ backgroundColor: '#212b54' }}
             onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#1a2243')}
             onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#212b54')}
           >
+            {/* Olha como o ícone fica simples agora: */}
+            <UserPlus size={48} />
             Adicionar Paciente
-          </button>
+          </Link>
 
-          <button
+          <Link href={"/exibir-pacientes"}
             onClick={handleExibirPacientes}
-            className="flex-1 text-white text-lg font-semibold py-5 px-8 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
+            className="flex-1 flex flex-col items-center justify-center gap-4 text-white text-xl font-semibold py-10 px-8 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
             style={{ backgroundColor: '#212b54' }}
             onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#1a2243')}
             onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#212b54')}
           >
+            {/* E o outro ícone aqui: */}
+            <Users size={48} />
             Exibir Pacientes
-          </button>
+          </Link>
 
         </div>
 
