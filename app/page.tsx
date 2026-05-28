@@ -4,6 +4,8 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { UserPlus, Users } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+
 
 export default function Home() {
   const [message, setMessage] = useState<string | null>(null);
@@ -15,6 +17,8 @@ export default function Home() {
   const handleExibirPacientes = () => {
     setMessage('Acessando tela de Exibição de Pacientes...');
   };
+
+  const router = useRouter();
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -43,18 +47,27 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
 
           <div className="w-40 h-10 flex items-center">
-            <Image src="/IBK_LOGOTIPO_white.png" alt="Instituto Buko Kaesemodel" width={160} height={40} />
+            <Link href="/" className="w-40 h-10 flex items-center">
+              <Image
+                src="/IBK_LOGOTIPO_white.png" alt="Instituto Buko Kaesemodel" width={160} height={40}/>
+            </Link>
           </div>
 
           <nav>
             <ul className="flex items-center gap-6">
-              {['Início', 'Sair'].map((item) => (
-                <li key={item}>
-                  <button className="text-white font-medium text-sm hover:text-blue-200 transition-colors duration-200 cursor-pointer">
-                    {item}
-                  </button>
-                </li>
-              ))}
+              <li>
+                <button
+                  onClick={() => router.push('/')}
+                  className="text-white font-medium text-sm hover:text-blue-200 transition-colors duration-200 cursor-pointer"
+                >
+                  Início
+                </button>
+              </li>
+              <li>
+                <button className="text-white font-medium text-sm hover:text-blue-200 transition-colors duration-200 cursor-pointer">
+                  Sair
+                </button>
+              </li>
             </ul>
           </nav>
 
