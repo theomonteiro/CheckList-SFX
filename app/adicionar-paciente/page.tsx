@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 
 type Genero = 'Masculino' | 'Feminino';
@@ -21,10 +21,14 @@ const SINTOMAS_FEM = SINTOMAS_MASC.filter((s) => s !== 'Macroorquidismo');
 const sintomasVisiveis = (genero: Genero) =>
   genero === 'Masculino' ? SINTOMAS_MASC : SINTOMAS_FEM;
 
-export default function AdicionarPaciente() {
+function FormularioPaciente() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const pacienteIdUrl = searchParams.get('pacienteId');
+
   const [step, setStep] = useState<1 | 2>(1);
   const [loading, setLoading] = useState(false);
+  const [isPacienteExistente, setIsPacienteExistente] = useState(false);
 
   const [nome, setNome] = useState('');
   const [idade, setIdade] = useState('');
@@ -32,6 +36,24 @@ export default function AdicionarPaciente() {
   const [responsavel, setResponsavel] = useState('');
   const [respostas, setRespostas] = useState<Respostas>({});
   const [observacoes, setObservacoes] = useState('');
+
+  // Busca os dados se o paciente já existir
+  useEffect(() => {
+    if (pacienteIdUrl) {
+      fetch(`/api/pacientes/${pacienteIdUrl}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.sucesso && data.paciente) {
+            setNome(data.paciente.nome_completo);
+            setIdade(String(data.paciente.idade));
+            setGenero(data.paciente.genero as Genero);
+            setResponsavel(data.paciente.responsavel || '');
+            setIsPacienteExistente(true);
+          }
+        })
+        .catch(console.error);
+    }
+  }, [pacienteIdUrl]);
 
   // Reinicia respostas ao mudar género
   useEffect(() => {
@@ -70,6 +92,7 @@ export default function AdicionarPaciente() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          pacienteId: isPacienteExistente ? pacienteIdUrl : undefined,
           paciente: {
             nome: nome.trim(),
             idade: Number(idade),
@@ -85,31 +108,14 @@ export default function AdicionarPaciente() {
 
       if (!response.ok || !data.sucesso) {
         alert('Erro ao salvar os dados. Tente novamente.');
+        setLoading(false);
         return;
       }
 
-      // Salva no localStorage apenas para exibição imediata do relatório
-      const resultadoRecente = {
-        paciente: {
-          nome: nome.trim(),
-          idade: Number(idade),
-          genero: g,
-          responsavel: responsavel.trim(),
-        },
-        questionario: respostas,
-        observacoes,
-        score: data.scoreGerado,
-        isSuspeito: data.isSuspeito,
-        pacienteId: data.pacienteId,
-        relatorioId: data.relatorioId,
-      };
-
-      localStorage.setItem('resultadoRecente', JSON.stringify(resultadoRecente));
-      router.push('/relatorio');
+      router.push('/relatorio/' + data.relatorioId);
 
     } catch {
-      alert('Erro de conexão com o servidor. Verifique se a API está a funcionar.');
-    } finally {
+      alert('Erro de conexão com o servidor.');
       setLoading(false);
     }
   };
@@ -179,7 +185,15 @@ export default function AdicionarPaciente() {
           {/* PASSO 1 */}
           {step === 1 && (
             <div className="fade-in-up bg-white rounded-2xl shadow-sm border border-gray-100 p-8 flex flex-col gap-6">
-              <h2 className="text-2xl font-bold" style={{ color: '#212b54' }}>Dados do Paciente</h2>
+              <h2 className="text-2xl font-bold" style={{ color: '#212b54' }}>
+                Dados do Paciente
+              </h2>
+              
+              {isPacienteExistente && (
+                <div className="bg-blue-50 border border-blue-200 text-blue-800 text-sm px-4 py-3 rounded-xl font-medium">
+                  Informação: Adicionando um novo relatório para o histórico de <strong>{nome}</strong>.
+                </div>
+              )}
 
               {([
                 { label: 'Nome Completo', value: nome, setter: setNome, type: 'text', placeholder: 'Ex: João da Silva' },
@@ -194,11 +208,12 @@ export default function AdicionarPaciente() {
                       value={value}
                       onChange={(e) => setter(e.target.value)}
                       placeholder={placeholder}
+                      readOnly={isPacienteExistente}
                       min={type === 'number' ? 0 : undefined}
                       max={type === 'number' ? 120 : undefined}
-                      className="border border-gray-300 rounded-lg px-4 py-3 text-gray-800 outline-none transition"
-                      onFocus={(e) => (e.currentTarget.style.borderColor = '#212b54')}
-                      onBlur={(e) => (e.currentTarget.style.borderColor = '#d1d5db')}
+                      className={`border border-gray-300 rounded-lg px-4 py-3 text-gray-800 outline-none transition ${isPacienteExistente ? 'bg-gray-100 opacity-80 cursor-not-allowed' : ''}`}
+                      onFocus={(e) => { if (!isPacienteExistente) e.currentTarget.style.borderColor = '#212b54'; }}
+                      onBlur={(e) => { if (!isPacienteExistente) e.currentTarget.style.borderColor = '#d1d5db'; }}
                     />
                   </div>
                 )
@@ -210,12 +225,13 @@ export default function AdicionarPaciente() {
                   {(['Masculino', 'Feminino'] as Genero[]).map((g) => (
                     <button
                       key={g}
-                      onClick={() => setGenero(g)}
-                      className="flex-1 py-3 rounded-lg border-2 font-semibold text-sm transition-all duration-150 cursor-pointer"
+                      onClick={() => !isPacienteExistente && setGenero(g)}
+                      disabled={isPacienteExistente}
+                      className={`flex-1 py-3 rounded-lg border-2 font-semibold text-sm transition-all duration-150 ${isPacienteExistente ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}`}
                       style={{
-                        backgroundColor: genero === g ? '#212b54' : 'transparent',
-                        borderColor: '#212b54',
-                        color: genero === g ? '#fff' : '#212b54',
+                        backgroundColor: genero === g ? '#212b54' : (isPacienteExistente ? '#f3f4f6' : 'transparent'),
+                        borderColor: genero === g ? '#212b54' : '#e5e7eb',
+                        color: genero === g ? '#fff' : '#6b7280',
                       }}
                     >
                       {g}
@@ -322,5 +338,14 @@ export default function AdicionarPaciente() {
         </div>
       </main>
     </div>
+  );
+}
+
+// O Next.js requer Suspense no boundary quando utilizamos o hook useSearchParams
+export default function AdicionarPaciente() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><p className="text-gray-400 text-sm">Carregando...</p></div>}>
+      <FormularioPaciente />
+    </Suspense>
   );
 }

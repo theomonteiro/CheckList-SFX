@@ -10,6 +10,7 @@ interface Relatorio {
   id: number;
   score_final: number;
   is_suspeito: boolean;
+  created_at: string;
 }
 
 interface Paciente {
@@ -52,6 +53,10 @@ export default function ExibirPacientes() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap');
+        * { font-family: 'Sora', sans-serif; }
+      `}</style>
 
       {/* HEADER */}
       <header className="w-full shadow-md" style={{ backgroundColor: '#212b54' }}>
@@ -99,13 +104,13 @@ export default function ExibirPacientes() {
 
           {/* Contador */}
           {!carregando && !erro && (
-            <p className="text-gray-400 text-sm mb-6">
+            <p className="text-gray-400 text-sm mb-6 font-medium">
               {lista.length} paciente{lista.length !== 1 ? 's' : ''} encontrado{lista.length !== 1 ? 's' : ''}
             </p>
           )}
 
           {/* Carregando */}
-          {carregando && <p className="text-gray-400 text-sm">A carregar pacientes...</p>}
+          {carregando && <p className="text-gray-400 text-sm font-medium">A carregar pacientes...</p>}
 
           {/* Erro */}
           {erro && (
@@ -143,29 +148,29 @@ export default function ExibirPacientes() {
               <table className="w-full border-collapse">
                 <thead>
                   <tr style={{ backgroundColor: '#212b54' }}>
-                    <th className="text-left text-white text-xs font-semibold uppercase tracking-wider px-6 py-3 w-12">#</th>
-                    <th className="text-left text-white text-xs font-semibold uppercase tracking-wider px-4 py-3">Nome</th>
-                    <th className="text-left text-white text-xs font-semibold uppercase tracking-wider px-4 py-3 w-28">Idade</th>
-                    <th className="text-left text-white text-xs font-semibold uppercase tracking-wider px-4 py-3 w-32">Género</th>
-                    <th className="text-left text-white text-xs font-semibold uppercase tracking-wider px-4 py-3 w-24">Score</th>
-                    <th className="text-right text-white text-xs font-semibold uppercase tracking-wider px-6 py-3 w-48">Ações</th>
+                    <th className="text-left text-white text-xs font-semibold uppercase tracking-wider px-6 py-4 w-12">#</th>
+                    <th className="text-left text-white text-xs font-semibold uppercase tracking-wider px-4 py-4">Nome</th>
+                    <th className="text-left text-white text-xs font-semibold uppercase tracking-wider px-4 py-4 w-28">Idade</th>
+                    <th className="text-left text-white text-xs font-semibold uppercase tracking-wider px-4 py-4 w-32">Género</th>
+                    <th className="text-left text-white text-xs font-semibold uppercase tracking-wider px-4 py-4 w-24">Último Score</th>
+                    <th className="text-right text-white text-xs font-semibold uppercase tracking-wider px-6 py-4 w-48">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {lista.map((item, index) => {
-                    const ultimoRelatorio = item.relatorios?.[0];
+                    const ultimoRelatorio = item.relatorios?.[0]; // O mais atual garantido pela API
                     return (
                       <tr
                         key={item.id}
                         className="border-b border-gray-100 last:border-0 transition-colors duration-150 hover:bg-gray-50"
                       >
                         {/* # */}
-                        <td className="px-6 py-4 text-gray-400 text-sm font-mono">
+                        <td className="px-6 py-5 text-gray-400 text-sm font-mono font-medium">
                           {String(index + 1).padStart(2, '0')}
                         </td>
 
                         {/* Nome */}
-                        <td className="px-4 py-4">
+                        <td className="px-4 py-5">
                           <div className="flex items-center gap-3">
                             <div
                               className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
@@ -173,55 +178,52 @@ export default function ExibirPacientes() {
                             >
                               {item.nome_completo.charAt(0).toUpperCase()}
                             </div>
-                            <span className="text-gray-800 font-medium text-sm whitespace-nowrap">
+                            <span className="text-gray-800 font-semibold text-sm whitespace-nowrap">
                               {item.nome_completo}
                             </span>
                           </div>
                         </td>
 
                         {/* Idade */}
-                        <td className="px-4 py-4 text-gray-500 text-sm whitespace-nowrap">
+                        <td className="px-4 py-5 text-gray-500 text-sm font-medium whitespace-nowrap">
                           {item.idade} anos
                         </td>
 
                         {/* Género */}
-                        <td className="px-4 py-4 text-gray-500 text-sm whitespace-nowrap">
+                        <td className="px-4 py-5 text-gray-500 text-sm font-medium whitespace-nowrap">
                           {item.genero}
                         </td>
 
                         {/* Score */}
-                        <td className="px-4 py-4">
+                        <td className="px-4 py-5">
                           {ultimoRelatorio ? (
                             <span
-                              className="text-sm font-bold"
-                              style={{ color: ultimoRelatorio.is_suspeito ? '#dc2626' : '#16a34a' }}
+                              className="text-sm font-bold px-3 py-1 rounded-full"
+                              style={{ 
+                                color: ultimoRelatorio.is_suspeito ? '#dc2626' : '#16a34a',
+                                backgroundColor: ultimoRelatorio.is_suspeito ? '#fee2e2' : '#dcfce7'
+                              }}
                             >
                               {ultimoRelatorio.score_final.toFixed(2)}
                             </span>
                           ) : (
-                            <span className="text-gray-300 text-sm">—</span>
+                            <span className="text-gray-300 text-sm font-medium">—</span>
                           )}
                         </td>
 
                         {/* Ações */}
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-5">
                           <div className="flex items-center justify-end gap-2">
+                            {/* BOTÃO ATUALIZADO: Vai para o prontuário do paciente */}
                             <button
-                              onClick={() => alert('Em breve: Visualização de relatório histórico!')}
+                              onClick={() => router.push('/paciente/' + item.id)}
                               className="flex items-center gap-2 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm transition-all duration-200 cursor-pointer whitespace-nowrap"
                               style={{ backgroundColor: '#212b54' }}
                               onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#1a2243')}
                               onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#212b54')}
                             >
                               <FileText size={15} />
-                              Ver Relatório
-                            </button>
-                            <button
-                              onClick={() => alert('Em breve: Remoção de paciente via API.')}
-                              title="Apagar paciente"
-                              className="flex items-center justify-center w-9 h-9 rounded-lg border border-red-200 text-red-400 hover:bg-red-50 hover:text-red-600 hover:border-red-300 transition-all duration-200 cursor-pointer flex-shrink-0"
-                            >
-                              <Trash2 size={15} />
+                              Abrir Prontuário
                             </button>
                           </div>
                         </td>

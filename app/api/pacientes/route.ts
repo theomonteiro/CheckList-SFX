@@ -8,7 +8,9 @@ export async function GET() {
     const pacientes = await prisma.paciente.findMany({
       orderBy: { created_at: 'desc' },
       include: {
-        relatorios: true,
+        relatorios: {
+          orderBy: { created_at: 'desc' } // Garante que o relatorios[0] será o mais recente
+        },
       },
     });
 

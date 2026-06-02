@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import {
   AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, RotateCcw, Save,
 } from 'lucide-react';
@@ -12,6 +12,7 @@ type Genero = 'Masculino' | 'Feminino';
 type Resposta = 'sim' | 'nao' | null;
 
 interface DadosPaciente {
+  pacienteId: number;
   paciente: { nome: string; idade: number; genero: Genero; responsavel: string };
   questionario: Record<string, Resposta>;
   observacoes: string;
@@ -145,20 +146,54 @@ function PieChart({
 // ── Página Principal ─────────────────────────────────────────────────────
 export default function Relatorio() {
   const router = useRouter();
+  const params = useParams(); 
+  
   const [dados, setDados] = useState<DadosPaciente | null>(null);
   const [mostrarRespostas, setMostrarRespostas] = useState(false);
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem('resultadoRecente');
-      if (raw) setDados(JSON.parse(raw));
-    } catch { /* ignora */ }
-    setCarregando(false);
-  }, []);
+    const fetchDadosDoBanco = async () => {
+      try {
+        if (!params.id) return;
+        
+        const res = await fetch(`/api/relatorios/${params.id}`);
+        const data = await res.json();
+        
+        if (data.sucesso && data.relatorio) {
+          const r = data.relatorio;
+          
+          const questionarioFormatado: Record<string, Resposta> = {};
+          r.respostas.forEach((resp: any) => {
+             questionarioFormatado[resp.sintoma_nome] = resp.resposta ? 'sim' : 'nao';
+          });
+
+          setDados({
+            pacienteId: r.paciente.id,
+            paciente: {
+              nome: r.paciente.nome_completo,
+              idade: r.paciente.idade,
+              genero: r.paciente.genero as Genero,
+              responsavel: r.paciente.responsavel || ''
+            },
+            questionario: questionarioFormatado,
+            observacoes: r.observacoes || '',
+            score: r.score_final,
+            isSuspeito: r.is_suspeito
+          });
+        }
+      } catch (error) {
+        console.error('Erro ao buscar do servidor', error);
+      } finally {
+        setCarregando(false);
+      }
+    };
+
+    fetchDadosDoBanco();
+  }, [params.id]);
 
   if (carregando) {
-    return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><p className="text-gray-400 text-sm">A carregar...</p></div>;
+    return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><p className="text-gray-400 text-sm">A carregar dados do banco...</p></div>;
   }
   if (!dados) {
     return (
@@ -178,7 +213,6 @@ export default function Relatorio() {
     router.push('/exibir-pacientes');
   };
 
-  // Fatias do gráfico: apenas sintomas com Sim
   const slices = Object.entries(questionario)
     .filter(([, v]) => v === 'sim')
     .map(([sintoma], i) => ({
@@ -319,7 +353,7 @@ export default function Relatorio() {
                 </div>
               </div>
 
-              {/* Grid de detalhes — sem Nome (já exibido no avatar) */}
+              {/* Grid de detalhes */}
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'16px 32px' }}>
                 {[
                   { label:'Responsável', value: paciente.responsavel },
@@ -450,7 +484,8 @@ export default function Relatorio() {
 
           {/* ── Botões ── */}
           <div className="fu d5" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-            <button className="btn-outline" onClick={() => router.push('/adicionar-paciente')}>
+            {/* O BOTÃO AGORA MANDA O PACIENTE ID NA URL! */}
+            <button className="btn-outline" onClick={() => router.push('/adicionar-paciente?pacienteId=' + dados.pacienteId)}>
               <RotateCcw size={17} /> Fazer Novo Questionário
             </button>
             <button className="btn-solid" onClick={handleVerListaPacientes}>
