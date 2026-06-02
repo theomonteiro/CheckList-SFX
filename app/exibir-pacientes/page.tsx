@@ -6,42 +6,49 @@ import { useRouter } from 'next/navigation';
 import { FileText, ArrowLeft, Users, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 
-interface PacienteSalvo {
-  paciente: { nome: string; idade: number; genero: string; responsavel: string };
-  questionario: Record<string, string | null>;
-  observacoes: string;
-  score: number;
-  isSuspeito: boolean;
-  _fromList?: boolean;
+interface Relatorio {
+  id: number;
+  score_final: number;
+  is_suspeito: boolean;
+}
+
+interface Paciente {
+  id: number;
+  nome_completo: string;
+  idade: number;
+  genero: string;
+  responsavel: string | null;
+  created_at: string;
+  relatorios: Relatorio[];
 }
 
 export default function ExibirPacientes() {
   const router = useRouter();
-  const [lista, setLista] = useState<PacienteSalvo[]>([]);
+  const [lista, setLista] = useState<Paciente[]>([]);
   const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem('listaPacientes');
-      if (raw) setLista(JSON.parse(raw));
-    } catch { /* ignora */ }
-    setCarregando(false);
+    const fetchPacientes = async () => {
+      try {
+        const res = await fetch('/api/pacientes');
+        const data = await res.json();
+
+        if (!res.ok || !data.sucesso) {
+          setErro('Não foi possível carregar os pacientes.');
+          return;
+        }
+
+        setLista(data.pacientes);
+      } catch {
+        setErro('Erro de conexão com o servidor.');
+      } finally {
+        setCarregando(false);
+      }
+    };
+
+    fetchPacientes();
   }, []);
-
-  const handleVerRelatorio = (item: PacienteSalvo) => {
-    try {
-      localStorage.setItem('pacienteAtual', JSON.stringify({ ...item, _fromList: true }));
-    } catch { /* ignora */ }
-    router.push('/relatorio');
-  };
-
-  const handleApagar = (index: number) => {
-    const nova = lista.filter((_, i) => i !== index);
-    setLista(nova);
-    try {
-      localStorage.setItem('listaPacientes', JSON.stringify(nova));
-    } catch { /* ignora */ }
-  };
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -73,7 +80,7 @@ export default function ExibirPacientes() {
       <main className="flex-1 flex flex-col items-center py-12 px-6">
         <div className="w-full max-w-5xl">
 
-          {/* Cabeçalho da seção */}
+          {/* Cabeçalho */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
               <Users size={28} style={{ color: '#212b54' }} />
@@ -91,7 +98,7 @@ export default function ExibirPacientes() {
           </div>
 
           {/* Contador */}
-          {!carregando && (
+          {!carregando && !erro && (
             <p className="text-gray-400 text-sm mb-6">
               {lista.length} paciente{lista.length !== 1 ? 's' : ''} encontrado{lista.length !== 1 ? 's' : ''}
             </p>
@@ -100,8 +107,21 @@ export default function ExibirPacientes() {
           {/* Carregando */}
           {carregando && <p className="text-gray-400 text-sm">A carregar pacientes...</p>}
 
+          {/* Erro */}
+          {erro && (
+            <div className="flex flex-col items-center justify-center py-16 gap-3">
+              <p className="text-red-400 font-medium">{erro}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="text-sm text-gray-500 hover:text-gray-700 underline cursor-pointer"
+              >
+                Tentar novamente
+              </button>
+            </div>
+          )}
+
           {/* Lista vazia */}
-          {!carregando && lista.length === 0 && (
+          {!carregando && !erro && lista.length === 0 && (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
               <Users size={48} style={{ color: '#e5e7eb' }} />
               <p className="text-gray-400 text-base font-medium">Nenhum paciente cadastrado ainda.</p>
@@ -118,7 +138,7 @@ export default function ExibirPacientes() {
           )}
 
           {/* Tabela */}
-          {!carregando && lista.length > 0 && (
+          {!carregando && !erro && lista.length > 0 && (
             <div className="rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
               <table className="w-full border-collapse">
                 <thead>
@@ -127,69 +147,87 @@ export default function ExibirPacientes() {
                     <th className="text-left text-white text-xs font-semibold uppercase tracking-wider px-4 py-3">Nome</th>
                     <th className="text-left text-white text-xs font-semibold uppercase tracking-wider px-4 py-3 w-28">Idade</th>
                     <th className="text-left text-white text-xs font-semibold uppercase tracking-wider px-4 py-3 w-32">Género</th>
-                    <th className="text-right text-white text-xs font-semibold uppercase tracking-wider px-6 py-3 w-64">Ações</th>
+                    <th className="text-left text-white text-xs font-semibold uppercase tracking-wider px-4 py-3 w-24">Score</th>
+                    <th className="text-right text-white text-xs font-semibold uppercase tracking-wider px-6 py-3 w-48">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {lista.map((item, index) => (
-                    <tr
-                      key={index}
-                      className="border-b border-gray-100 last:border-0 transition-colors duration-150 hover:bg-gray-50"
-                    >
-                      {/* # */}
-                      <td className="px-6 py-4 text-gray-400 text-sm font-mono">
-                        {String(index + 1).padStart(2, '0')}
-                      </td>
+                  {lista.map((item, index) => {
+                    const ultimoRelatorio = item.relatorios?.[0];
+                    return (
+                      <tr
+                        key={item.id}
+                        className="border-b border-gray-100 last:border-0 transition-colors duration-150 hover:bg-gray-50"
+                      >
+                        {/* # */}
+                        <td className="px-6 py-4 text-gray-400 text-sm font-mono">
+                          {String(index + 1).padStart(2, '0')}
+                        </td>
 
-                      {/* Nome */}
-                      <td className="px-4 py-4">
-                        <div className="flex items-center gap-3">
-                          <div
-                            className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
-                            style={{ backgroundColor: index % 2 === 0 ? '#212b54' : '#3b4f8a' }}
-                          >
-                            {item.paciente.nome.charAt(0).toUpperCase()}
+                        {/* Nome */}
+                        <td className="px-4 py-4">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+                              style={{ backgroundColor: index % 2 === 0 ? '#212b54' : '#3b4f8a' }}
+                            >
+                              {item.nome_completo.charAt(0).toUpperCase()}
+                            </div>
+                            <span className="text-gray-800 font-medium text-sm whitespace-nowrap">
+                              {item.nome_completo}
+                            </span>
                           </div>
-                          <span className="text-gray-800 font-medium text-sm whitespace-nowrap">
-                            {item.paciente.nome}
-                          </span>
-                        </div>
-                      </td>
+                        </td>
 
-                      {/* Idade */}
-                      <td className="px-4 py-4 text-gray-500 text-sm whitespace-nowrap">
-                        {item.paciente.idade} anos
-                      </td>
+                        {/* Idade */}
+                        <td className="px-4 py-4 text-gray-500 text-sm whitespace-nowrap">
+                          {item.idade} anos
+                        </td>
 
-                      {/* Género */}
-                      <td className="px-4 py-4 text-gray-500 text-sm whitespace-nowrap">
-                        {item.paciente.genero}
-                      </td>
+                        {/* Género */}
+                        <td className="px-4 py-4 text-gray-500 text-sm whitespace-nowrap">
+                          {item.genero}
+                        </td>
 
-                      {/* Ações */}
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => handleVerRelatorio(item)}
-                            className="flex items-center gap-2 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm transition-all duration-200 cursor-pointer whitespace-nowrap"
-                            style={{ backgroundColor: '#212b54' }}
-                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#1a2243')}
-                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#212b54')}
-                          >
-                            <FileText size={15} />
-                            Ver Relatório
-                          </button>
-                          <button
-                            onClick={() => handleApagar(index)}
-                            title="Apagar paciente"
-                            className="flex items-center justify-center w-9 h-9 rounded-lg border border-red-200 text-red-400 hover:bg-red-50 hover:text-red-600 hover:border-red-300 transition-all duration-200 cursor-pointer flex-shrink-0"
-                          >
-                            <Trash2 size={15} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                        {/* Score */}
+                        <td className="px-4 py-4">
+                          {ultimoRelatorio ? (
+                            <span
+                              className="text-sm font-bold"
+                              style={{ color: ultimoRelatorio.is_suspeito ? '#dc2626' : '#16a34a' }}
+                            >
+                              {ultimoRelatorio.score_final.toFixed(2)}
+                            </span>
+                          ) : (
+                            <span className="text-gray-300 text-sm">—</span>
+                          )}
+                        </td>
+
+                        {/* Ações */}
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => alert('Em breve: Visualização de relatório histórico!')}
+                              className="flex items-center gap-2 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm transition-all duration-200 cursor-pointer whitespace-nowrap"
+                              style={{ backgroundColor: '#212b54' }}
+                              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#1a2243')}
+                              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#212b54')}
+                            >
+                              <FileText size={15} />
+                              Ver Relatório
+                            </button>
+                            <button
+                              onClick={() => alert('Em breve: Remoção de paciente via API.')}
+                              title="Apagar paciente"
+                              className="flex items-center justify-center w-9 h-9 rounded-lg border border-red-200 text-red-400 hover:bg-red-50 hover:text-red-600 hover:border-red-300 transition-all duration-200 cursor-pointer flex-shrink-0"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

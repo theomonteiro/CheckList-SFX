@@ -151,7 +151,7 @@ export default function Relatorio() {
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem('pacienteAtual');
+      const raw = localStorage.getItem('resultadoRecente');
       if (raw) setDados(JSON.parse(raw));
     } catch { /* ignora */ }
     setCarregando(false);
@@ -174,17 +174,7 @@ export default function Relatorio() {
   const { paciente, questionario, observacoes, score, isSuspeito } = dados;
   const limiar = paciente.genero === 'Masculino' ? 0.56 : 0.55;
 
-  const handleSalvarEVerPacientes = () => {
-    try {
-      // Se veio da lista (_fromList), não duplica — só redireciona
-      const dadosComFlag = dados as DadosPaciente & { _fromList?: boolean };
-      if (!dadosComFlag._fromList) {
-        const raw = localStorage.getItem('listaPacientes');
-        const lista = raw ? JSON.parse(raw) : [];
-        lista.push(dados);
-        localStorage.setItem('listaPacientes', JSON.stringify(lista));
-      }
-    } catch { /* ignora */ }
+  const handleVerListaPacientes = () => {
     router.push('/exibir-pacientes');
   };
 
@@ -463,8 +453,8 @@ export default function Relatorio() {
             <button className="btn-outline" onClick={() => router.push('/adicionar-paciente')}>
               <RotateCcw size={17} /> Fazer Novo Questionário
             </button>
-            <button className="btn-solid" onClick={handleSalvarEVerPacientes}>
-              <Save size={17} /> Salvar e Ver Pacientes
+            <button className="btn-solid" onClick={handleVerListaPacientes}>
+              <Save size={17} /> Ver Lista de Pacientes
             </button>
           </div>
 

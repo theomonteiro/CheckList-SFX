@@ -4,38 +4,27 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 
-// ── Tipos ──────────────────────────────────────────────────────────────────
 type Genero = 'Masculino' | 'Feminino';
 type Resposta = 'sim' | 'nao' | null;
 type Respostas = Record<string, Resposta>;
 
-// ── Pesos por sintoma e género ─────────────────────────────────────────────
-const PESOS: Record<string, { Masculino: number; Feminino: number }> = {
-  'Deficiência intelectual':      { Masculino: 0.32, Feminino: 0.20 },
-  'Face alongada/orelhas':        { Masculino: 0.29, Feminino: 0.09 },
-  'Macroorquidismo':              { Masculino: 0.26, Feminino: 0.00 },
-  'Hipermobilidade articular':    { Masculino: 0.19, Feminino: 0.04 },
-  'Dificuldades de aprendizagem': { Masculino: 0.18, Feminino: 0.28 },
-  'Déficit de atenção':           { Masculino: 0.17, Feminino: 0.12 },
-  'Mov. repetitivos':             { Masculino: 0.17, Feminino: 0.05 },
-  'Atraso na fala':               { Masculino: 0.14, Feminino: 0.01 },
-  'Hiperatividade':               { Masculino: 0.12, Feminino: 0.04 },
-  'Evita contato visual':         { Masculino: 0.06, Feminino: 0.08 },
-  'Evita contato físico':         { Masculino: 0.04, Feminino: 0.07 },
-  'Agressividade':                { Masculino: 0.01, Feminino: 0.02 },
-};
-
-const LIMITES: Record<Genero, number> = { Masculino: 0.56, Feminino: 0.55 };
+const SINTOMAS_MASC = [
+  'Deficiência intelectual', 'Face alongada/orelhas', 'Macroorquidismo',
+  'Hipermobilidade articular', 'Dificuldades de aprendizagem', 'Déficit de atenção',
+  'Mov. repetitivos', 'Atraso na fala', 'Hiperatividade',
+  'Evita contato visual', 'Evita contato físico', 'Agressividade',
+];
+const SINTOMAS_FEM = SINTOMAS_MASC.filter((s) => s !== 'Macroorquidismo');
 
 const sintomasVisiveis = (genero: Genero) =>
-  Object.keys(PESOS).filter(
-    (s) => !(s === 'Macroorquidismo' && genero === 'Feminino')
-  );
+  genero === 'Masculino' ? SINTOMAS_MASC : SINTOMAS_FEM;
 
 export default function AdicionarPaciente() {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2>(1);
+  const [loading, setLoading] = useState(false);
 
   const [nome, setNome] = useState('');
   const [idade, setIdade] = useState('');
@@ -43,22 +32,6 @@ export default function AdicionarPaciente() {
   const [responsavel, setResponsavel] = useState('');
   const [respostas, setRespostas] = useState<Respostas>({});
   const [observacoes, setObservacoes] = useState('');
-
-  // Pré-preenche se vier do relatório
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem('pacienteAtual');
-      if (!raw) return;
-      const dados = JSON.parse(raw);
-      if (dados?.paciente?.nome) {
-        setNome(dados.paciente.nome);
-        setIdade(String(dados.paciente.idade));
-        setGenero(dados.paciente.genero);
-        setResponsavel(dados.paciente.responsavel);
-        setStep(2);
-      }
-    } catch { /* ignora */ }
-  }, []);
 
   // Reinicia respostas ao mudar género
   useEffect(() => {
@@ -80,7 +53,7 @@ export default function AdicionarPaciente() {
     setRespostas((prev) => ({ ...prev, [sintoma]: valor }));
   };
 
-  const handleConcluir = () => {
+  const handleConcluir = async () => {
     const g = genero as Genero;
     const sintomas = sintomasVisiveis(g);
 
@@ -90,33 +63,55 @@ export default function AdicionarPaciente() {
       return;
     }
 
-    const score = sintomas.reduce((acc, s) => {
-      return respostas[s] === 'sim' ? acc + PESOS[s][g] : acc;
-    }, 0);
-
-    const isSuspeito = score >= LIMITES[g];
-
-    const payload = {
-      paciente: {
-        nome: nome.trim(),
-        idade: Number(idade),
-        genero: g,
-        responsavel: responsavel.trim(),
-      },
-      questionario: respostas,
-      observacoes,
-      score: parseFloat(score.toFixed(4)),
-      isSuspeito,
-    };
+    setLoading(true);
 
     try {
-      localStorage.setItem('pacienteAtual', JSON.stringify(payload));
-    } catch {
-      alert('Não foi possível salvar os dados.');
-      return;
-    }
+      const response = await fetch('/api/calcular-score', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          paciente: {
+            nome: nome.trim(),
+            idade: Number(idade),
+            genero: g,
+            responsavel: responsavel.trim(),
+          },
+          questionario: respostas,
+          observacoes,
+        }),
+      });
 
-    router.push('/relatorio');
+      const data = await response.json();
+
+      if (!response.ok || !data.sucesso) {
+        alert('Erro ao salvar os dados. Tente novamente.');
+        return;
+      }
+
+      // Salva no localStorage apenas para exibição imediata do relatório
+      const resultadoRecente = {
+        paciente: {
+          nome: nome.trim(),
+          idade: Number(idade),
+          genero: g,
+          responsavel: responsavel.trim(),
+        },
+        questionario: respostas,
+        observacoes,
+        score: data.scoreGerado,
+        isSuspeito: data.isSuspeito,
+        pacienteId: data.pacienteId,
+        relatorioId: data.relatorioId,
+      };
+
+      localStorage.setItem('resultadoRecente', JSON.stringify(resultadoRecente));
+      router.push('/relatorio');
+
+    } catch {
+      alert('Erro de conexão com o servidor. Verifique se a API está a funcionar.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -184,9 +179,7 @@ export default function AdicionarPaciente() {
           {/* PASSO 1 */}
           {step === 1 && (
             <div className="fade-in-up bg-white rounded-2xl shadow-sm border border-gray-100 p-8 flex flex-col gap-6">
-              <h2 className="text-2xl font-bold" style={{ color: '#212b54' }}>
-                Dados do Paciente
-              </h2>
+              <h2 className="text-2xl font-bold" style={{ color: '#212b54' }}>Dados do Paciente</h2>
 
               {([
                 { label: 'Nome Completo', value: nome, setter: setNome, type: 'text', placeholder: 'Ex: João da Silva' },
@@ -211,7 +204,6 @@ export default function AdicionarPaciente() {
                 )
               )}
 
-              {/* Género */}
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-semibold text-gray-600">Género</label>
                 <div className="flex gap-3">
@@ -248,9 +240,7 @@ export default function AdicionarPaciente() {
           {step === 2 && genero && (
             <div className="fade-in-up flex flex-col gap-6">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold" style={{ color: '#212b54' }}>
-                  Questionário de Sintomas
-                </h2>
+                <h2 className="text-2xl font-bold" style={{ color: '#212b54' }}>Questionário de Sintomas</h2>
                 <button
                   onClick={() => setStep(1)}
                   className="text-sm text-gray-400 hover:text-gray-600 transition cursor-pointer"
@@ -296,7 +286,6 @@ export default function AdicionarPaciente() {
                 ))}
               </div>
 
-              {/* Observações */}
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-semibold text-gray-600">Observações</label>
                 <textarea
@@ -312,12 +301,20 @@ export default function AdicionarPaciente() {
 
               <button
                 onClick={handleConcluir}
-                className="w-full text-white font-semibold py-4 rounded-xl shadow-md transition-all duration-200 cursor-pointer text-lg mb-4"
+                disabled={loading}
+                className="w-full text-white font-semibold py-4 rounded-xl shadow-md transition-all duration-200 cursor-pointer text-lg mb-4 flex items-center justify-center gap-3 disabled:opacity-70"
                 style={{ backgroundColor: '#212b54' }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#1a2243')}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#212b54')}
+                onMouseEnter={(e) => { if (!loading) e.currentTarget.style.backgroundColor = '#1a2243'; }}
+                onMouseLeave={(e) => { if (!loading) e.currentTarget.style.backgroundColor = '#212b54'; }}
               >
-                Concluir Questionário →
+                {loading ? (
+                  <>
+                    <Loader2 size={20} className="animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  'Concluir Questionário →'
+                )}
               </button>
             </div>
           )}
