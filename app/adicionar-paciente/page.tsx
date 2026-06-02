@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 type Genero = 'Masculino' | 'Feminino';
 type Resposta = 'sim' | 'nao' | null;
@@ -65,7 +66,7 @@ function FormularioPaciente() {
 
   const handleAvancar = () => {
     if (!nome.trim() || !idade || !genero || !responsavel.trim()) {
-      alert('Por favor, preencha todos os campos antes de continuar.');
+      toast.error('Por favor, preencha todos os campos...');
       return;
     }
     setStep(2);
@@ -81,7 +82,7 @@ function FormularioPaciente() {
 
     const semResposta = sintomas.filter((s) => respostas[s] === null);
     if (semResposta.length > 0) {
-      alert(`Responda todos os sintomas antes de concluir.\nFaltam: ${semResposta.join(', ')}`);
+      toast.error('Responda todos os sintomas antes de concluir.');
       return;
     }
 
@@ -107,7 +108,7 @@ function FormularioPaciente() {
       const data = await response.json();
 
       if (!response.ok || !data.sucesso) {
-        alert('Erro ao salvar os dados. Tente novamente.');
+        toast.error('Erro ao salvar os dados. Tente novamente.');
         setLoading(false);
         return;
       }
@@ -115,9 +116,14 @@ function FormularioPaciente() {
       router.push('/relatorio/' + data.relatorioId);
 
     } catch {
-      alert('Erro de conexão com o servidor.');
+      toast.error('Erro de conexão com o servidor.');
       setLoading(false);
     }
+  };
+
+  const handleLogout = async () => {
+    await fetch('/api/logout', { method: 'POST' });
+    router.push('/');
   };
 
   return (
@@ -144,7 +150,7 @@ function FormularioPaciente() {
                 </Link>
               </li>
               <li>
-                <button className="text-white font-medium text-sm hover:text-blue-200 transition-colors duration-200 cursor-pointer">
+                <button onClick={handleLogout} className="text-white font-medium text-sm hover:text-blue-200 transition-colors duration-200 cursor-pointer">
                   Sair
                 </button>
               </li>

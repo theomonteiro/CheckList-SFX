@@ -51,6 +51,11 @@ export default function ExibirPacientes() {
     fetchPacientes();
   }, []);
 
+  const handleLogout = async () => {
+    await fetch('/api/logout', { method: 'POST' });
+    router.push('/');
+  };
+
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <style>{`
@@ -72,7 +77,7 @@ export default function ExibirPacientes() {
                 </button>
               </li>
               <li>
-                <button className="text-white font-medium text-sm hover:text-blue-200 transition-colors duration-200 cursor-pointer">
+                <button onClick={handleLogout} className="text-white font-medium text-sm hover:text-blue-200 transition-colors duration-200 cursor-pointer">
                   Sair
                 </button>
               </li>
@@ -144,8 +149,8 @@ export default function ExibirPacientes() {
 
           {/* Tabela */}
           {!carregando && !erro && lista.length > 0 && (
-            <div className="rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-              <table className="w-full border-collapse">
+            <div className="rounded-2xl border border-gray-100 shadow-sm overflow-x-auto w-full">
+                <table className="w-full border-collapse min-w-[800px]">
                 <thead>
                   <tr style={{ backgroundColor: '#212b54' }}>
                     <th className="text-left text-white text-xs font-semibold uppercase tracking-wider px-6 py-4 w-12">#</th>

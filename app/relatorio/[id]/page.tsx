@@ -5,8 +5,9 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import {
-  AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, RotateCcw, Save,
+  AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, RotateCcw, Save, LogOut
 } from 'lucide-react';
+import toast from 'react-hot-toast'; // Importamos o toast para as notificações
 
 type Genero = 'Masculino' | 'Feminino';
 type Resposta = 'sim' | 'nao' | null;
@@ -61,9 +62,7 @@ function ScoreGauge({ score, isSuspeito, limiar }: { score: number; isSuspeito: 
 
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      {/* Track */}
       <circle cx={cx} cy={cy} r={r} fill="none" stroke={trackColor} strokeWidth={strokeW} />
-      {/* Progress */}
       <circle
         cx={cx} cy={cy} r={r} fill="none"
         stroke={color} strokeWidth={strokeW}
@@ -73,7 +72,6 @@ function ScoreGauge({ score, isSuspeito, limiar }: { score: number; isSuspeito: 
         transform={`rotate(-90 ${cx} ${cy})`}
         style={{ transition: 'stroke-dashoffset 1.4s cubic-bezier(0.22,1,0.36,1)' }}
       />
-      {/* Score text */}
       <text x={cx} y={cy - 10} textAnchor="middle" dominantBaseline="middle"
         style={{ fontSize: 32, fontWeight: 800, fill: color, fontFamily: 'Sora, sans-serif' }}>
         {score.toFixed(2)}
@@ -87,11 +85,7 @@ function ScoreGauge({ score, isSuspeito, limiar }: { score: number; isSuspeito: 
 }
 
 // ── Componente SVG Pie Chart ─────────────────────────────────────────────
-function PieChart({
-  slices,
-}: {
-  slices: { label: string; value: number; color: string }[];
-}) {
+function PieChart({ slices }: { slices: { label: string; value: number; color: string }[] }) {
   const [animated, setAnimated] = useState(false);
   useEffect(() => { const t = setTimeout(() => setAnimated(true), 400); return () => clearTimeout(t); }, []);
 
@@ -130,7 +124,6 @@ function PieChart({
           style={{ transition: `all 1s cubic-bezier(0.22,1,0.36,1) ${i * 0.05}s` }}
         />
       ))}
-      {/* Centro */}
       <text x={cx} y={cy - 6} textAnchor="middle"
         style={{ fontSize: 13, fontWeight: 700, fill: '#212b54', fontFamily: 'Sora, sans-serif' }}>
         Sintomas
@@ -151,6 +144,13 @@ export default function Relatorio() {
   const [dados, setDados] = useState<DadosPaciente | null>(null);
   const [mostrarRespostas, setMostrarRespostas] = useState(false);
   const [carregando, setCarregando] = useState(true);
+
+  // Função de Logout adicionada
+  const handleLogout = async () => {
+    await fetch('/api/logout', { method: 'POST' });
+    toast.success('Você saiu do sistema.');
+    router.push('/');
+  };
 
   useEffect(() => {
     const fetchDadosDoBanco = async () => {
@@ -183,7 +183,7 @@ export default function Relatorio() {
           });
         }
       } catch (error) {
-        console.error('Erro ao buscar do servidor', error);
+        toast.error('Erro ao buscar dados do servidor');
       } finally {
         setCarregando(false);
       }
@@ -199,19 +199,15 @@ export default function Relatorio() {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-4">
         <p className="text-gray-600">Nenhum relatório encontrado.</p>
-        <Link href="/adicionar-paciente" className="text-white px-6 py-3 rounded-xl font-semibold" style={{ backgroundColor: '#212b54' }}>
-          Adicionar Paciente
-        </Link>
+        <button onClick={() => router.push('/painel')} className="text-white px-6 py-3 rounded-xl font-semibold" style={{ backgroundColor: '#212b54' }}>
+          Voltar ao Painel
+        </button>
       </div>
     );
   }
 
   const { paciente, questionario, observacoes, score, isSuspeito } = dados;
   const limiar = paciente.genero === 'Masculino' ? 0.56 : 0.55;
-
-  const handleVerListaPacientes = () => {
-    router.push('/exibir-pacientes');
-  };
 
   const slices = Object.entries(questionario)
     .filter(([, v]) => v === 'sim')
@@ -298,17 +294,32 @@ export default function Relatorio() {
         .btn-outline:active { transform:scale(.98); }
 
         .legend-dot { width:10px; height:10px; border-radius:3px; flex-shrink:0; }
+
+        /* A MÁGICA DA RESPONSIVIDADE PARA CELULAR ESTÁ AQUI */
+        @media (max-width: 768px) {
+          .responsive-grid {
+            display: flex !important;
+            flex-direction: column !important;
+          }
+          main.rel {
+            padding: 24px 16px 40px !important;
+          }
+        }
       `}</style>
 
       {/* HEADER */}
       <header className="rel" style={{ backgroundColor:'#212b54', boxShadow:'0 2px 16px rgba(33,43,84,.25)' }}>
-        <div style={{ maxWidth:1200, margin:'0 auto', padding:'14px 32px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-          <Link href="/" style={{ display:'flex', alignItems:'center' }}>
+        <div style={{ maxWidth:1200, margin:'0 auto', padding:'14px 32px', display:'flex', alignItems:'center', justifyItems:'center', justifyContent:'space-between' }}>
+          <Link href="/painel" style={{ display:'flex', alignItems:'center' }}>
             <Image src="/IBK_LOGOTIPO_white.png" alt="Instituto Buko Kaesemodel" width={145} height={36} />
           </Link>
           <nav style={{ display:'flex', gap:28 }}>
-            <Link href="/" style={{ color:'#fff', fontSize:13, fontWeight:500, textDecoration:'none', opacity:.85 }}>Início</Link>
-            <button style={{ color:'#fff', fontSize:13, fontWeight:500, background:'none', border:'none', cursor:'pointer', opacity:.85, fontFamily:'Sora,sans-serif' }}>Sair</button>
+            <Link href="/painel" style={{ color:'#fff', fontSize:13, fontWeight:500, textDecoration:'none', opacity:.85 }}>Painel</Link>
+            
+            {/* BOTÃO DE SAIR AGORA CHAMA O LOGOUT VERDADEIRO */}
+            <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: '6px', color:'#fff', fontSize:13, fontWeight:500, background:'none', border:'none', cursor:'pointer', opacity:.85, fontFamily:'Sora,sans-serif' }}>
+              <LogOut size={14}/> Sair
+            </button>
           </nav>
         </div>
       </header>
@@ -328,51 +339,34 @@ export default function Relatorio() {
           </div>
 
           {/* ── LINHA 1: Paciente (esq) + Score (dir) ── */}
-          <div className="fu d2" style={{ display:'grid', gridTemplateColumns:'1.6fr 1fr', gap:20 }}>
+          {/* ADICIONADA A CLASSE responsive-grid AQUI */}
+          <div className="fu d2 responsive-grid" style={{ display:'grid', gridTemplateColumns:'1.6fr 1fr', gap:20 }}>
 
             {/* Paciente */}
             <div className="card" style={{ padding:28 }}>
               <p className="section-label">Informações do Paciente</p>
-
-              {/* Avatar + nome */}
               <div style={{ display:'flex', alignItems:'center', gap:16, marginBottom:22 }}>
-                <div style={{
-                  width:60, height:60, borderRadius:16, backgroundColor:'#212b54',
-                  display:'flex', alignItems:'center', justifyContent:'center',
-                  fontSize:26, fontWeight:800, color:'#fff', flexShrink:0,
-                }}>
+                <div style={{ width:60, height:60, borderRadius:16, backgroundColor:'#212b54', display:'flex', alignItems:'center', justifyContent:'center', fontSize:26, fontWeight:800, color:'#fff', flexShrink:0 }}>
                   {paciente.nome.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <p style={{ fontSize:20, fontWeight:700, color:'#1f2937', margin:'0 0 3px', fontFamily:'Sora,sans-serif' }}>
-                    {paciente.nome}
-                  </p>
-                  <p style={{ fontSize:13, color:'#9ca3af', margin:0, fontFamily:'Sora,sans-serif' }}>
-                    {paciente.genero} · {paciente.idade} anos
-                  </p>
+                  <p style={{ fontSize:20, fontWeight:700, color:'#1f2937', margin:'0 0 3px', fontFamily:'Sora,sans-serif' }}>{paciente.nome}</p>
+                  <p style={{ fontSize:13, color:'#9ca3af', margin:0, fontFamily:'Sora,sans-serif' }}>{paciente.genero} · {paciente.idade} anos</p>
                 </div>
               </div>
 
-              {/* Grid de detalhes */}
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'16px 32px' }}>
-                {[
-                  { label:'Responsável', value: paciente.responsavel },
-                ].map(({ label, value }) => (
-                  <div key={label}>
-                    <p className="meta-label">{label}</p>
-                    <p className="meta-value">{value}</p>
-                  </div>
-                ))}
+                <div>
+                  <p className="meta-label">Responsável</p>
+                  <p className="meta-value">{paciente.responsavel}</p>
+                </div>
               </div>
 
-              {/* Observações inline se existir */}
               {observacoes.trim() && (
                 <>
                   <div style={{ borderTop:'1px solid #f3f4f6', margin:'20px 0 16px' }} />
                   <p className="meta-label">Observações</p>
-                  <p style={{ fontSize:13, color:'#374151', lineHeight:1.6, margin:0, fontFamily:'Sora,sans-serif', whiteSpace:'pre-wrap' }}>
-                    {observacoes}
-                  </p>
+                  <p style={{ fontSize:13, color:'#374151', lineHeight:1.6, margin:0, fontFamily:'Sora,sans-serif', whiteSpace:'pre-wrap' }}>{observacoes}</p>
                 </>
               )}
             </div>
@@ -381,10 +375,7 @@ export default function Relatorio() {
             <div className="card" style={{ padding:28, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:8 }}>
               <p className="section-label" style={{ alignSelf:'flex-start' }}>Score de Risco</p>
               <ScoreGauge score={score} isSuspeito={isSuspeito} limiar={limiar} />
-              <p style={{
-                fontSize:13, fontWeight:700, color: isSuspeito ? '#dc2626' : '#16a34a',
-                margin:'4px 0 0', textAlign:'center', fontFamily:'Sora,sans-serif',
-              }}>
+              <p style={{ fontSize:13, fontWeight:700, color: isSuspeito ? '#dc2626' : '#16a34a', margin:'4px 0 0', textAlign:'center', fontFamily:'Sora,sans-serif' }}>
                 {isSuspeito ? '⚠ Score acima do limiar' : '✓ Score abaixo do limiar'}
               </p>
               <p style={{ fontSize:12, color:'#9ca3af', margin:0, fontFamily:'Sora,sans-serif' }}>
@@ -394,7 +385,8 @@ export default function Relatorio() {
           </div>
 
           {/* ── LINHA 2: Gráfico de Pizza (esq) + Alerta (dir) ── */}
-          <div className="fu d3" style={{ display:'grid', gridTemplateColumns:'1.6fr 1fr', gap:20 }}>
+          {/* ADICIONADA A CLASSE responsive-grid AQUI */}
+          <div className="fu d3 responsive-grid" style={{ display:'grid', gridTemplateColumns:'1.6fr 1fr', gap:20 }}>
 
             {/* Gráfico de pizza */}
             <div className="card" style={{ padding:28 }}>
@@ -402,8 +394,8 @@ export default function Relatorio() {
               {slices.length === 0 ? (
                 <p style={{ fontSize:13, color:'#9ca3af', fontFamily:'Sora,sans-serif' }}>Nenhum sintoma positivo registado.</p>
               ) : (
-                <div style={{ display:'flex', alignItems:'center', gap:24 }}>
-                  <div style={{ flexShrink:0 }}>
+                <div className="responsive-grid" style={{ display:'flex', alignItems:'center', gap:24 }}>
+                  <div style={{ flexShrink:0, display: 'flex', justifyContent: 'center' }}>
                     <PieChart slices={slices} />
                   </div>
                   <div style={{ flex:1, display:'flex', flexDirection:'column', gap:8, overflowY:'auto', maxHeight:220 }}>
@@ -413,12 +405,8 @@ export default function Relatorio() {
                       return (
                         <div key={i} style={{ display:'flex', alignItems:'center', gap:8 }}>
                           <div className="legend-dot" style={{ backgroundColor: sl.color }} />
-                          <span style={{ fontSize:12, color:'#374151', fontFamily:'Sora,sans-serif', flex:1, lineHeight:1.3 }}>
-                            {sl.label}
-                          </span>
-                          <span style={{ fontSize:12, fontWeight:700, color:'#212b54', fontFamily:'Sora,sans-serif', flexShrink:0 }}>
-                            {pct}%
-                          </span>
+                          <span style={{ fontSize:12, color:'#374151', fontFamily:'Sora,sans-serif', flex:1, lineHeight:1.3 }}>{sl.label}</span>
+                          <span style={{ fontSize:12, fontWeight:700, color:'#212b54', fontFamily:'Sora,sans-serif', flexShrink:0 }}>{pct}%</span>
                         </div>
                       );
                     })}
@@ -428,46 +416,27 @@ export default function Relatorio() {
             </div>
 
             {/* Alerta */}
-            <div style={{
-              borderRadius:20, padding:'24px 22px', display:'flex', flexDirection:'column', gap:12,
-              backgroundColor: isSuspeito ? '#fff4f2' : '#f0fdf4',
-              border:`2px solid ${isSuspeito ? '#fca5a5' : '#86efac'}`,
-              boxShadow:`0 4px 16px ${isSuspeito ? 'rgba(220,38,38,.08)' : 'rgba(22,163,74,.08)'}`,
-            }}>
+            <div style={{ borderRadius:20, padding:'24px 22px', display:'flex', flexDirection:'column', gap:12, backgroundColor: isSuspeito ? '#fff4f2' : '#f0fdf4', border:`2px solid ${isSuspeito ? '#fca5a5' : '#86efac'}`, boxShadow:`0 4px 16px ${isSuspeito ? 'rgba(220,38,38,.08)' : 'rgba(22,163,74,.08)'}` }}>
               <div style={{ display:'flex', alignItems:'flex-start', gap:12 }}>
-                {isSuspeito
-                  ? <AlertTriangle size={26} style={{ color:'#dc2626', flexShrink:0, marginTop:2 }} />
-                  : <CheckCircle2 size={26} style={{ color:'#16a34a', flexShrink:0, marginTop:2 }} />
-                }
+                {isSuspeito ? <AlertTriangle size={26} style={{ color:'#dc2626', flexShrink:0, marginTop:2 }} /> : <CheckCircle2 size={26} style={{ color:'#16a34a', flexShrink:0, marginTop:2 }} />}
                 <p style={{ fontWeight:700, fontSize:15, color: isSuspeito ? '#991b1b' : '#15803d', margin:0, fontFamily:'Sora,sans-serif' }}>
                   {isSuspeito ? 'Risco Elevado — Recomendado Teste Genético' : 'Baixa Probabilidade de Síndrome do X Frágil'}
                 </p>
               </div>
               <p style={{ fontSize:13, color: isSuspeito ? '#b91c1c' : '#166534', margin:0, lineHeight:1.6, fontFamily:'Sora,sans-serif' }}>
-                {isSuspeito
-                  ? 'O score calculado sugere alta probabilidade da síndrome. Recomenda-se encaminhamento para avaliação genética especializada.'
-                  : 'O score está abaixo do limiar de suspeita clínica para este género. Acompanhamento de rotina recomendado.'}
+                {isSuspeito ? 'O score calculado sugere alta probabilidade da síndrome. Recomenda-se encaminhamento para avaliação genética especializada.' : 'O score está abaixo do limiar de suspeita clínica para este género. Acompanhamento de rotina recomendado.'}
               </p>
             </div>
           </div>
 
           {/* ── Respostas expansíveis ── */}
           <div className="fu d4">
-            <button
-              onClick={() => setMostrarRespostas(v => !v)}
-              className={`expand-btn${mostrarRespostas ? ' open' : ''}`}
-            >
+            <button onClick={() => setMostrarRespostas(v => !v)} className={`expand-btn${mostrarRespostas ? ' open' : ''}`}>
               <span style={{ fontSize:14, fontWeight:600, color:'#212b54' }}>Ver Respostas do Questionário</span>
-              <div style={{
-                width:28, height:28, borderRadius:'50%', backgroundColor:'#eef0f8',
-                display:'flex', alignItems:'center', justifyContent:'center',
-              }}>
-                {mostrarRespostas
-                  ? <ChevronUp size={14} style={{ color:'#212b54' }} />
-                  : <ChevronDown size={14} style={{ color:'#212b54' }} />}
+              <div style={{ width:28, height:28, borderRadius:'50%', backgroundColor:'#eef0f8', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                {mostrarRespostas ? <ChevronUp size={14} style={{ color:'#212b54' }} /> : <ChevronDown size={14} style={{ color:'#212b54' }} />}
               </div>
             </button>
-
             {mostrarRespostas && (
               <div className="resp-panel">
                 {sintomas.map((sintoma) => (
@@ -483,13 +452,12 @@ export default function Relatorio() {
           </div>
 
           {/* ── Botões ── */}
-          <div className="fu d5" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-            {/* O BOTÃO AGORA MANDA O PACIENTE ID NA URL! */}
+          <div className="fu d5 responsive-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
             <button className="btn-outline" onClick={() => router.push('/adicionar-paciente?pacienteId=' + dados.pacienteId)}>
               <RotateCcw size={17} /> Fazer Novo Questionário
             </button>
-            <button className="btn-solid" onClick={handleVerListaPacientes}>
-              <Save size={17} /> Ver Lista de Pacientes
+            <button className="btn-solid" onClick={() => router.push('/paciente/' + dados.pacienteId)}>
+              <Save size={17} /> Ver Prontuário
             </button>
           </div>
 

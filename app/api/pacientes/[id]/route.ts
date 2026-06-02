@@ -1,28 +1,38 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
   context: any 
 ) {
   try {
+    const token = request.cookies.get('medico_token')?.value;
+    if (!token) {
+      return NextResponse.json({ sucesso: false, erro: 'Não autorizado.' }, { status: 401 });
+    }
+    const medicoLogadoId = Number(token);
+
     const params = await context.params;
     const pacienteId = Number(params.id);
 
-    const paciente = await prisma.paciente.findUnique({
-      where: { id: pacienteId },
+    // Mudou para findFirst para podermos passar duas condições (ID do paciente e ID do médico)
+    const paciente = await prisma.paciente.findFirst({
+      where: { 
+        id: pacienteId,
+        medico_id: medicoLogadoId // <-- BLINDAGEM DE ROTA
+      },
       include: {
         relatorios: {
-          orderBy: { created_at: 'desc' } // Organiza o histórico temporal
+          orderBy: { created_at: 'desc' }
         }
       }
     });
 
     if (!paciente) {
       return NextResponse.json(
-        { sucesso: false, erro: 'Paciente não encontrado.' },
+        { sucesso: false, erro: 'Paciente não encontrado ou não pertence a você.' },
         { status: 404 }
       );
     }
