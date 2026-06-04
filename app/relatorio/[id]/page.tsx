@@ -5,9 +5,9 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import {
-  AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, RotateCcw, Save, LogOut
+  AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, RotateCcw, Save, LogOut, Printer
 } from 'lucide-react';
-import toast from 'react-hot-toast'; // Importamos o toast para as notificações
+import toast from 'react-hot-toast'; 
 
 type Genero = 'Masculino' | 'Feminino';
 type Resposta = 'sim' | 'nao' | null;
@@ -118,7 +118,7 @@ function PieChart({ slices }: { slices: { label: string; value: number; color: s
 
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}
-      style={{ transition: 'all 0.6s', overflow: 'visible' }}>
+      style={{ transition: 'all 0.6s', overflow: 'hidden' }}>
       {paths.map((sl, i) => (
         <path key={i} d={sl.d} fill={sl.color}
           style={{ transition: `all 1s cubic-bezier(0.22,1,0.36,1) ${i * 0.05}s` }}
@@ -145,7 +145,6 @@ export default function Relatorio() {
   const [mostrarRespostas, setMostrarRespostas] = useState(false);
   const [carregando, setCarregando] = useState(true);
 
-  // Função de Logout adicionada
   const handleLogout = async () => {
     await fetch('/api/logout', { method: 'POST' });
     toast.success('Você saiu do sistema.');
@@ -222,7 +221,7 @@ export default function Relatorio() {
   const simCount = Object.values(questionario).filter((v) => v === 'sim').length;
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f0f2f8', display: 'flex', flexDirection: 'column' }}>
+    <div className="print-wrapper" style={{ minHeight: '100vh', backgroundColor: '#f0f2f8', display: 'flex', flexDirection: 'column' }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap');
         .rel { font-family: 'Sora', sans-serif; }
@@ -295,7 +294,6 @@ export default function Relatorio() {
 
         .legend-dot { width:10px; height:10px; border-radius:3px; flex-shrink:0; }
 
-        /* A MÁGICA DA RESPONSIVIDADE PARA CELULAR ESTÁ AQUI */
         @media (max-width: 768px) {
           .responsive-grid {
             display: flex !important;
@@ -305,18 +303,262 @@ export default function Relatorio() {
             padding: 24px 16px 40px !important;
           }
         }
+
+        /* --- LAYOUT DE IMPRESSÃO DEDICADO --- */
+        .print-document { display: none; }
+
+        @media print {
+          @page { size: A4 portrait; margin: 14mm 16mm 14mm 16mm; }
+
+          /* Oculta todo o conteúdo de tela */
+          .screen-content,
+          header.no-print,
+          .print-header-old { display: none !important; }
+
+          /* Mostra apenas o documento de impressão */
+          .print-wrapper { background: #fff !important; min-height: auto !important; }
+          .print-document {
+            display: block !important;
+            font-family: 'Sora', 'Helvetica Neue', Arial, sans-serif;
+            font-size: 10pt;
+            color: #1a1a1a;
+            line-height: 1.5;
+          }
+
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+
+          /* Tipografia do documento */
+          .pd-h1 { font-size: 20pt; font-weight: 800; color: #212b54; margin: 0; }
+          .pd-h2 { font-size: 7.5pt; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #9ca3af; margin: 0 0 8px; }
+          .pd-label { font-size: 8pt; color: #9ca3af; font-weight: 500; margin: 0 0 2px; }
+          .pd-value { font-size: 10pt; color: #1f2937; font-weight: 600; margin: 0; }
+
+          /* Seções do documento */
+          .pd-section { margin-bottom: 14px; page-break-inside: avoid; break-inside: avoid; }
+          .pd-divider { border: none; border-top: 1px solid #e5e7eb; margin: 12px 0; }
+
+          /* Tabela de sintomas */
+          .pd-table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+          .pd-table th { 
+            background: #212b54; color: #fff; padding: 5px 10px; 
+            text-align: left; font-weight: 600; font-size: 8pt;
+          }
+          .pd-table td { padding: 5px 10px; border-bottom: 1px solid #f3f4f6; }
+          .pd-table tr:nth-child(even) td { background: #f9fafb; }
+
+          /* Badge sim/nao */
+          .pd-sim { background: #212b54; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 8pt; font-weight: 700; }
+          .pd-nao { background: #e9eaf0; color: #6b7280; padding: 2px 8px; border-radius: 4px; font-size: 8pt; font-weight: 700; }
+
+          /* Alerta diagnóstico */
+          .pd-alert-high { background: #fff4f2; border: 1.5px solid #fca5a5; border-radius: 6px; padding: 10px 14px; }
+          .pd-alert-low  { background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 6px; padding: 10px 14px; }
+
+          /* Barra de score CSS */
+          .pd-score-track { background: #e5e7eb; border-radius: 4px; height: 8px; width: 100%; }
+          .pd-score-fill  { height: 8px; border-radius: 4px; }
+
+          /* Grid de 2 colunas */
+          .pd-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+          .pd-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+          /* Caixa de campo */
+          .pd-field { padding: 8px 0; border-bottom: 1px solid #f3f4f6; }
+          .pd-field:last-child { border-bottom: none; }
+
+          /* Rodapé */
+          .pd-footer { 
+            margin-top: 16px; padding-top: 8px; 
+            border-top: 1px solid #e5e7eb;
+            display: flex; justify-content: space-between;
+            font-size: 8pt; color: #9ca3af;
+          }
+        }
       `}</style>
 
-      {/* HEADER */}
-      <header className="rel" style={{ backgroundColor:'#212b54', boxShadow:'0 2px 16px rgba(33,43,84,.25)' }}>
+      {/* ══════════════════════════════════════════
+          DOCUMENTO DE IMPRESSÃO (oculto na tela)
+          ══════════════════════════════════════════ */}
+      <div className="print-document">
+
+        {/* Cabeçalho */}
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', paddingBottom:10, borderBottom:'2.5px solid #212b54', marginBottom:16 }}>
+          <div>
+            <p style={{ margin:'0 0 2px', fontSize:'8pt', fontWeight:700, letterSpacing:'.08em', textTransform:'uppercase', color:'#9ca3af' }}>Instituto Buko Kaesemodel</p>
+            <p className="pd-h1">Relatório Clínico</p>
+            <p style={{ margin:'4px 0 0', fontSize:'8.5pt', color:'#6b7280' }}>Rastreamento — Síndrome do X Frágil</p>
+          </div>
+          <div style={{ textAlign:'right' }}>
+            <p style={{ margin:0, fontSize:'8pt', color:'#9ca3af' }}>Data de emissão</p>
+            <p style={{ margin:0, fontSize:'10pt', fontWeight:600, color:'#212b54' }}>
+              {new Date().toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' })}
+            </p>
+          </div>
+        </div>
+
+        {/* Seção 1 — Dados do Paciente + Score */}
+        <div className="pd-section pd-grid-2">
+
+          {/* Paciente */}
+          <div style={{ border:'1px solid #e5e7eb', borderRadius:6, padding:'12px 14px' }}>
+            <p className="pd-h2">Dados do Paciente</p>
+            <div className="pd-field">
+              <p className="pd-label">Nome completo</p>
+              <p className="pd-value">{paciente.nome}</p>
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+              <div className="pd-field">
+                <p className="pd-label">Idade</p>
+                <p className="pd-value">{paciente.idade} anos</p>
+              </div>
+              <div className="pd-field">
+                <p className="pd-label">Género</p>
+                <p className="pd-value">{paciente.genero}</p>
+              </div>
+            </div>
+            <div className="pd-field">
+              <p className="pd-label">Responsável</p>
+              <p className="pd-value">{paciente.responsavel || '—'}</p>
+            </div>
+            {observacoes.trim() && (
+              <div className="pd-field">
+                <p className="pd-label">Observações</p>
+                <p style={{ margin:0, fontSize:'9pt', color:'#374151', lineHeight:1.5 }}>{observacoes}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Score */}
+          <div style={{ border:'1px solid #e5e7eb', borderRadius:6, padding:'12px 14px', display:'flex', flexDirection:'column', gap:10 }}>
+            <p className="pd-h2">Score de Risco</p>
+
+            {/* Número grande */}
+            <div style={{ display:'flex', alignItems:'baseline', gap:8 }}>
+              <span style={{ fontSize:'32pt', fontWeight:800, lineHeight:1, color: isSuspeito ? '#dc2626' : '#16a34a' }}>
+                {score.toFixed(2)}
+              </span>
+              <span style={{ fontSize:'9pt', color:'#9ca3af' }}>/ 1.50</span>
+            </div>
+
+            {/* Barra de progresso */}
+            <div>
+              <div className="pd-score-track">
+                <div className="pd-score-fill" style={{ width:`${Math.min((score/1.5)*100,100)}%`, backgroundColor: isSuspeito ? '#dc2626' : '#16a34a' }} />
+              </div>
+              <div style={{ display:'flex', justifyContent:'space-between', marginTop:3 }}>
+                <span style={{ fontSize:'7.5pt', color:'#9ca3af' }}>0.00</span>
+                <span style={{ fontSize:'7.5pt', color:'#9ca3af' }}>Limiar: {limiar.toFixed(2)}</span>
+                <span style={{ fontSize:'7.5pt', color:'#9ca3af' }}>1.50</span>
+              </div>
+            </div>
+
+            {/* Status */}
+            <p style={{ margin:0, fontSize:'9.5pt', fontWeight:700, color: isSuspeito ? '#dc2626' : '#16a34a' }}>
+              {isSuspeito ? '⚠ Score acima do limiar' : '✓ Score abaixo do limiar'}
+            </p>
+            <p style={{ margin:0, fontSize:'8.5pt', color:'#6b7280' }}>
+              {simCount} de {sintomas.length} sintomas positivos
+            </p>
+          </div>
+        </div>
+
+        {/* Seção 2 — Diagnóstico */}
+        <div className="pd-section">
+          <p className="pd-h2">Conclusão Diagnóstica</p>
+          <div className={isSuspeito ? 'pd-alert-high' : 'pd-alert-low'}>
+            <p style={{ margin:'0 0 4px', fontWeight:700, fontSize:'10pt', color: isSuspeito ? '#991b1b' : '#15803d' }}>
+              {isSuspeito ? 'Risco Elevado — Recomendado Teste Genético' : 'Baixa Probabilidade de Síndrome do X Frágil'}
+            </p>
+            <p style={{ margin:0, fontSize:'9pt', color: isSuspeito ? '#b91c1c' : '#166534', lineHeight:1.5 }}>
+              {isSuspeito
+                ? 'O score calculado sugere alta probabilidade da síndrome. Recomenda-se encaminhamento para avaliação genética especializada.'
+                : 'O score calculado está abaixo do limiar de suspeita clínica para este género. Acompanhamento de rotina recomendado.'}
+            </p>
+          </div>
+        </div>
+
+        {/* Seção 3 — Questionário completo + Contribuições */}
+        <div className="pd-section pd-grid-2" style={{ alignItems:'start' }}>
+
+          {/* Tabela de sintomas */}
+          <div>
+            <p className="pd-h2">Questionário de Sintomas</p>
+            <table className="pd-table">
+              <thead>
+                <tr>
+                  <th style={{ width:'75%' }}>Sintoma</th>
+                  <th style={{ textAlign:'center' }}>Resposta</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sintomas.map((s) => (
+                  <tr key={s}>
+                    <td>{s}</td>
+                    <td style={{ textAlign:'center' }}>
+                      <span className={questionario[s] === 'sim' ? 'pd-sim' : 'pd-nao'}>
+                        {questionario[s] === 'sim' ? 'Sim' : 'Não'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Contribuições dos positivos */}
+          <div>
+            <p className="pd-h2">Contribuição dos Sintomas Positivos</p>
+            {slices.length === 0 ? (
+              <p style={{ fontSize:'9pt', color:'#9ca3af' }}>Nenhum sintoma positivo registado.</p>
+            ) : (
+              <table className="pd-table">
+                <thead>
+                  <tr>
+                    <th>Sintoma</th>
+                    <th style={{ textAlign:'right' }}>Contribuição</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {slices.map((sl, i) => {
+                    const total = slices.reduce((s, x) => s + x.value, 0);
+                    const pct = total > 0 ? ((sl.value / total) * 100).toFixed(1) : '0';
+                    return (
+                      <tr key={i}>
+                        <td style={{ display:'flex', alignItems:'center', gap:6 }}>
+                          <span style={{ width:8, height:8, borderRadius:2, backgroundColor:sl.color, display:'inline-block', flexShrink:0 }} />
+                          {sl.label}
+                        </td>
+                        <td style={{ textAlign:'right', fontWeight:700, color:'#212b54' }}>{pct}%</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+
+        {/* Rodapé */}
+        <div className="pd-footer">
+          <span>Instituto Buko Kaesemodel — Sistema IBK de Rastreamento</span>
+          <span>Documento gerado automaticamente. Não substitui avaliação clínica especializada.</span>
+        </div>
+
+      </div>
+      {/* ══ FIM DO DOCUMENTO DE IMPRESSÃO ══ */}
+
+      {/* Conteúdo de tela (oculto na impressão) */}
+      <div className="screen-content" style={{ display:'contents' }}>
+
+      {/* HEADER - Com no-print */}
+      <header className="rel no-print" style={{ backgroundColor:'#212b54', boxShadow:'0 2px 16px rgba(33,43,84,.25)' }}>
         <div style={{ maxWidth:1200, margin:'0 auto', padding:'14px 32px', display:'flex', alignItems:'center', justifyItems:'center', justifyContent:'space-between' }}>
           <Link href="/painel" style={{ display:'flex', alignItems:'center' }}>
             <Image src="/IBK_LOGOTIPO_white.png" alt="Instituto Buko Kaesemodel" width={145} height={36} />
           </Link>
           <nav style={{ display:'flex', gap:28 }}>
             <Link href="/painel" style={{ color:'#fff', fontSize:13, fontWeight:500, textDecoration:'none', opacity:.85 }}>Painel</Link>
-            
-            {/* BOTÃO DE SAIR AGORA CHAMA O LOGOUT VERDADEIRO */}
             <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: '6px', color:'#fff', fontSize:13, fontWeight:500, background:'none', border:'none', cursor:'pointer', opacity:.85, fontFamily:'Sora,sans-serif' }}>
               <LogOut size={14}/> Sair
             </button>
@@ -339,8 +581,7 @@ export default function Relatorio() {
           </div>
 
           {/* ── LINHA 1: Paciente (esq) + Score (dir) ── */}
-          {/* ADICIONADA A CLASSE responsive-grid AQUI */}
-          <div className="fu d2 responsive-grid" style={{ display:'grid', gridTemplateColumns:'1.6fr 1fr', gap:20 }}>
+          <div className="fu d2 responsive-grid grid-print" style={{ display:'grid', gridTemplateColumns:'1.6fr 1fr', gap:20 }}>
 
             {/* Paciente */}
             <div className="card" style={{ padding:28 }}>
@@ -385,8 +626,7 @@ export default function Relatorio() {
           </div>
 
           {/* ── LINHA 2: Gráfico de Pizza (esq) + Alerta (dir) ── */}
-          {/* ADICIONADA A CLASSE responsive-grid AQUI */}
-          <div className="fu d3 responsive-grid" style={{ display:'grid', gridTemplateColumns:'1.6fr 1fr', gap:20 }}>
+          <div className="fu d3 responsive-grid grid-print" style={{ display:'grid', gridTemplateColumns:'1.6fr 1fr', gap:20 }}>
 
             {/* Gráfico de pizza */}
             <div className="card" style={{ padding:28 }}>
@@ -394,11 +634,12 @@ export default function Relatorio() {
               {slices.length === 0 ? (
                 <p style={{ fontSize:13, color:'#9ca3af', fontFamily:'Sora,sans-serif' }}>Nenhum sintoma positivo registado.</p>
               ) : (
-                <div className="responsive-grid" style={{ display:'flex', alignItems:'center', gap:24 }}>
+                /* Adicionada a classe pie-flex-print aqui para soltar a legenda no PDF */
+                <div className="pie-flex-print" style={{ display:'flex', alignItems:'center', gap:24 }}>
                   <div style={{ flexShrink:0, display: 'flex', justifyContent: 'center' }}>
                     <PieChart slices={slices} />
                   </div>
-                  <div style={{ flex:1, display:'flex', flexDirection:'column', gap:8, overflowY:'auto', maxHeight:220 }}>
+                  <div className="scroll-print-fix" style={{ flex:1, display:'flex', flexDirection:'column', gap:8, overflowY:'auto', maxHeight:220 }}>
                     {slices.map((sl, i) => {
                       const total = slices.reduce((s, x) => s + x.value, 0);
                       const pct = total > 0 ? ((sl.value / total) * 100).toFixed(1) : '0';
@@ -430,7 +671,7 @@ export default function Relatorio() {
           </div>
 
           {/* ── Respostas expansíveis ── */}
-          <div className="fu d4">
+          <div className="fu d4 no-print">
             <button onClick={() => setMostrarRespostas(v => !v)} className={`expand-btn${mostrarRespostas ? ' open' : ''}`}>
               <span style={{ fontSize:14, fontWeight:600, color:'#212b54' }}>Ver Respostas do Questionário</span>
               <div style={{ width:28, height:28, borderRadius:'50%', backgroundColor:'#eef0f8', display:'flex', alignItems:'center', justifyContent:'center' }}>
@@ -452,17 +693,34 @@ export default function Relatorio() {
           </div>
 
           {/* ── Botões ── */}
-          <div className="fu d5 responsive-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+          <div className="fu d5 responsive-grid no-print" style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12 }}>
             <button className="btn-outline" onClick={() => router.push('/adicionar-paciente?pacienteId=' + dados.pacienteId)}>
               <RotateCcw size={17} /> Fazer Novo Questionário
             </button>
             <button className="btn-solid" onClick={() => router.push('/paciente/' + dados.pacienteId)}>
               <Save size={17} /> Ver Prontuário
             </button>
+            <button
+              onClick={() => window.print()}
+              style={{
+                display:'flex', alignItems:'center', justifyContent:'center', gap:10,
+                padding:'15px 24px', borderRadius:14, border:'none', cursor:'pointer',
+                fontSize:15, fontWeight:600, color:'#fff', fontFamily:'Sora,sans-serif',
+                background:'#10b981', transition:'background .15s, transform .1s',
+                boxShadow:'0 2px 8px rgba(16,185,129,.25)',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = '#059669')}
+              onMouseLeave={e => (e.currentTarget.style.background = '#10b981')}
+              onMouseDown={e => (e.currentTarget.style.transform = 'scale(.98)')}
+              onMouseUp={e => (e.currentTarget.style.transform = 'scale(1)')}
+            >
+              <Printer size={17} /> Salvar PDF
+            </button>
           </div>
 
         </div>
       </main>
+      </div>{/* fim screen-content */}
     </div>
   );
 }
