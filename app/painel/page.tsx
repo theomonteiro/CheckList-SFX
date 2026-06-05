@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Users, UserPlus, LogOut } from 'lucide-react';
+import { Users, UserPlus, LogOut, ShieldCheck } from 'lucide-react';
 
 export default function Painel() {
   const router = useRouter();
   const [nomeMedico, setNomeMedico] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     // Busca o nome do médico logado
@@ -16,6 +18,16 @@ export default function Painel() {
       .then(data => {
         if (data.sucesso && data.medico) {
           setNomeMedico(data.medico.nome);
+        }
+      })
+      .catch(console.error);
+
+    // Verifica se o usuário logado é Administrador
+    fetch('/api/admin/verificar')
+      .then(res => res.json())
+      .then(data => {
+        if (data.isAdmin) {
+          setIsAdmin(true);
         }
       })
       .catch(console.error);
@@ -44,12 +56,24 @@ export default function Painel() {
           <div className="flex items-center">
             <Image src="/IBK_LOGOTIPO_white.png" alt="Instituto Buko Kaesemodel" width={160} height={40} />
           </div>
-          <button 
-            onClick={handleLogout}
-            className="flex items-center gap-2 text-white font-medium text-sm hover:text-red-300 transition-colors duration-200"
-          >
-            Sair do Sistema <LogOut size={16} />
-          </button>
+          
+          <nav className="flex items-center gap-6">
+            {isAdmin && (
+              <Link 
+                href="/admin" 
+                className="flex items-center gap-2 text-white font-medium text-sm hover:text-blue-300 transition-colors duration-200"
+              >
+                <ShieldCheck size={16} /> Painel Admin
+              </Link>
+            )}
+            
+            <button 
+              onClick={handleLogout}
+              className="flex items-center gap-2 text-white font-medium text-sm hover:text-red-300 transition-colors duration-200"
+            >
+              Sair do Sistema <LogOut size={16} />
+            </button>
+          </nav>
         </div>
       </header>
 

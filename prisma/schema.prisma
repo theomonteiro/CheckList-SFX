@@ -16,6 +16,7 @@ model Medico {
   senha_hash String
   crm        String?    
   created_at DateTime   @default(now())
+  role      String   @default("MEDICO")
   
   pacientes  Paciente[] // Um médico tem vários pacientes
 }
