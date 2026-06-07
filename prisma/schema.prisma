@@ -1,0 +1,64 @@
+// 1. Configurações do Prisma e do Banco
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// 2. Tabela de Médicos
+model Medico {
+  id         Int        @id @default(autoincrement())
+  nome       String
+  email      String     @unique
+  senha_hash String
+  crm        String?    
+  created_at DateTime   @default(now())
+  role      String   @default("MEDICO")
+  
+  pacientes  Paciente[] // Um médico tem vários pacientes
+}
+
+// 3. Tabela de Pacientes
+model Paciente {
+  id            Int         @id @default(autoincrement())
+  nome_completo String
+  idade         Int
+  genero        String
+  responsavel   String?
+  created_at    DateTime    @default(now())
+  
+  // Relação: Este paciente pertence a um médico
+  medico_id     Int
+  medico        Medico      @relation(fields: [medico_id], references: [id])
+  
+  relatorios    Relatorio[] // Um paciente pode ter vários relatórios
+}
+
+// 4. Tabela de Relatórios (O Questionário Finalizado)
+model Relatorio {
+  id           Int                 @id @default(autoincrement())
+  score_final  Float
+  is_suspeito  Boolean
+  observacoes  String?             @db.Text
+  created_at   DateTime            @default(now())
+  
+  // Relação: Este relatório pertence a um paciente
+  paciente_id  Int
+  paciente     Paciente            @relation(fields: [paciente_id], references: [id])
+  
+  respostas    RespostaSintoma[]   // As 12 respostas deste relatório
+}
+
+// 5. Tabela de Respostas (O que foi marcado como Sim/Não)
+model RespostaSintoma {
+  id           Int        @id @default(autoincrement())
+  sintoma_nome String
+  resposta     Boolean    // true = Sim, false = Não
+  
+  // Relação: Esta resposta pertence a um relatório específico
+  relatorio_id Int
+  relatorio    Relatorio  @relation(fields: [relatorio_id], references: [id])
+}
