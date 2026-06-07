@@ -1,4 +1,3 @@
-```markdown
 # Documento Técnico de Implantação e Arquitetura
 
 ## 1. Visão Geral e Arquitetura do Sistema
