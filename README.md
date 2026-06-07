@@ -1,36 +1,42 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sistema de Rastreamento Clínico — Síndrome do X Frágil (IBK)
 
-## Getting Started
+Bem-vindo ao repositório oficial do Sistema de Rastreamento Clínico desenvolvido para o Instituto Buko Kaesemodel (IBK). Este sistema foi construído como projeto final da disciplina de Experiência Criativa: Criando Soluções Computacionais.
 
-First, run the development server:
+## Acesso ao Sistema (Live Demo)
+**EM BREVE**
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Vídeo de Demonstração
+**EM BREVE**
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Links Rápidos para Documentação
+Para manter este repositório organizado, dividimos as instruções em arquivos dedicados. Por favor, acesse:
+- [Documentação Técnica e Arquitetura](./DOCUMENTACAO.md) - Detalhes sobre o banco de dados, RBAC, tecnologias e rotas.
+- [Tutorial de Uso do Sistema](./TUTORIAL.md) - Guia passo a passo para o usuário final (profissional de saúde).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Como rodar o projeto localmente
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Clone o repositório e instale as dependências:
+   ```bash
+   npm install
 
-## Learn More
+2. Configure o arquivo .env na raiz do projeto com a URL do seu banco de dados MySQL:
+   ```bash
+   DATABASE_URL="mysql://usuario:senha@host/banco"
 
-To learn more about Next.js, take a look at the following resources:
+3. Atualize o banco de dados via Prisma:
+   ```bash
+   npx prisma generate
+   npx prisma db push
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+4. Inicie o servidor:
+   ```bash
+   npm run dev
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+O sistema estará disponível em http://localhost:3000
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Desenvolvedores
+- David Bobato Kikina
+- João Gabriel Rocco
+- Otavio Graczyki Belich
+- Theo Monteiro
+   
