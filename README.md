@@ -3,7 +3,7 @@
 Bem-vindo ao repositório oficial do Sistema de Rastreamento Clínico desenvolvido para o Instituto Buko Kaesemodel (IBK). Este sistema foi construído como projeto final da disciplina de Experiência Criativa: Criando Soluções Computacionais.
 
 ## Acesso ao Sistema (Live Demo)
-**EM BREVE**
+**https://check-list-sfx-ht5e.vercel.app/painel**
 
 ## Vídeo de Demonstração
 **EM BREVE**
