@@ -5,8 +5,10 @@ import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
+    
     const cookieStore = await cookies();
     const adminToken = cookieStore.get('medico_token')?.value;
     const adminUser = await prisma.medico.findUnique({ where: { id: Number(adminToken) } });
@@ -24,7 +26,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     }
 
     await prisma.medico.update({
-      where: { id: Number(params.id) },
+      where: { id: Number(id) }, // Usando o ID extraído
       data: dadosAtualizados
     });
 
@@ -34,8 +36,10 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
+    
     const cookieStore = await cookies();
     const adminToken = cookieStore.get('medico_token')?.value;
     const adminUser = await prisma.medico.findUnique({ where: { id: Number(adminToken) } });
@@ -44,12 +48,12 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
       return NextResponse.json({ sucesso: false, erro: 'Não autorizado' }, { status: 403 });
     }
 
-    if (Number(params.id) === Number(adminToken)) {
+    if (Number(id) === Number(adminToken)) {
         return NextResponse.json({ sucesso: false, erro: 'Você não pode excluir a si mesmo.' }, { status: 400 });
     }
 
     const medico = await prisma.medico.findUnique({
-      where: { id: Number(params.id) },
+      where: { id: Number(id) }, // Usando o ID extraído
       include: { pacientes: true }
     });
 
@@ -57,7 +61,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
       return NextResponse.json({ sucesso: false, erro: 'Não é possível excluir um médico que possui pacientes cadastrados.' }, { status: 400 });
     }
 
-    await prisma.medico.delete({ where: { id: Number(params.id) } });
+    await prisma.medico.delete({ where: { id: Number(id) } });
 
     return NextResponse.json({ sucesso: true });
   } catch (error) {
