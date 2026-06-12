@@ -124,9 +124,6 @@ export default function Login() {
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between ml-1">
                 <label className="text-sm font-bold text-gray-700">Senha</label>
-                <a href="#" className="text-xs font-semibold hover:underline" style={{ color: '#212b54' }}>
-                  Esqueceu a senha?
-                </a>
               </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
