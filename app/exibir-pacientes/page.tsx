@@ -64,7 +64,13 @@ export default function ExibirPacientes() {
       `}</style>
 
       {/* HEADER */}
-      <header className="w-full shadow-md" style={{ backgroundColor: '#212b54' }}>
+      <header
+        className="w-full shadow-md relative overflow-hidden"
+        style={{
+          backgroundColor: '#212b54',
+          backgroundImage: 'radial-gradient(circle at 90% 220%, #3a4a8a 0%, transparent 55%)',
+        }}
+      >
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/" className="w-40 h-10 flex items-center">
             <Image src="/IBK_LOGOTIPO_white.png" alt="Instituto Buko Kaesemodel" width={160} height={40} />
