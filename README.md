@@ -5,6 +5,9 @@ Bem-vindo ao repositório oficial do Sistema de Rastreamento Clínico desenvolvi
 ## Acesso ao Sistema (Live Demo)
 **https://check-list-sfx-ht5e.vercel.app/painel**
 
+## Vídeo de Instalação
+https://github.com/user-attachments/assets/0694e2e5-a8d6-419c-8662-62af5cfea818
+
 ## Vídeo de Demonstração
 https://github.com/user-attachments/assets/2a689856-a53d-4978-903c-5a6fcd881faf
 
