@@ -552,7 +552,7 @@ export default function Relatorio() {
       <div className="screen-content" style={{ display:'contents' }}>
 
       {/* HEADER - Com no-print */}
-      <header className="rel no-print" style={{ backgroundColor:'#212b54', boxShadow:'0 2px 16px rgba(33,43,84,.25)' }}>
+      <header className="rel no-print" style={{ backgroundColor:'#212b54', backgroundImage: 'radial-gradient(circle at 90% 220%, #3a4a8a 0%, transparent 55%)', boxShadow:'0 2px 16px rgba(33,43,84,.25)', position: 'relative', overflow: 'hidden' }}>
         <div style={{ maxWidth:1200, margin:'0 auto', padding:'14px 32px', display:'flex', alignItems:'center', justifyItems:'center', justifyContent:'space-between' }}>
           <Link href="/painel" style={{ display:'flex', alignItems:'center' }}>
             <Image src="/IBK_LOGOTIPO_white.png" alt="Instituto Buko Kaesemodel" width={145} height={36} />
